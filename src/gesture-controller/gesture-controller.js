@@ -70,6 +70,7 @@ ym.modules.define('shri2017.imageViewer.GestureController', [
         },
 
         _scale: function (targetPoint, newScale) {
+            newScale = Math.max(Math.min(newScale, 10), 0.02);
             var imageSize = this._view.getImageSize();
             var state = this._view.getState();
             // Позиция прикосновения на изображении на текущем уровне масштаба
