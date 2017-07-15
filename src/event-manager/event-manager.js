@@ -1,5 +1,6 @@
 ym.modules.define('shri2017.imageViewer.EventManager', [
-], function (provide) {
+    'util.extend'
+], function (provide, extend) {
 
     var EVENTS = {
         mousedown: 'start',
@@ -17,7 +18,7 @@ ym.modules.define('shri2017.imageViewer.EventManager', [
         this._setupListeners();
     }
 
-    Object.assign(EventManager.prototype, {
+    extend(EventManager.prototype, {
         destroy: function () {
             this._teardownListeners();
         },

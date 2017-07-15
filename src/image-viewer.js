@@ -1,7 +1,8 @@
 ym.modules.define('shri2017.ImageViewer', [
     'shri2017.imageViewer.View',
-    'shri2017.imageViewer.GestureController'
-], function (provide, View, GestureController) {
+    'shri2017.imageViewer.GestureController',
+    'util.extend'
+], function (provide, View, GestureController, extend) {
 
     function ImageViewer(params) {
         params = this._validateParams(params);
@@ -9,7 +10,7 @@ ym.modules.define('shri2017.ImageViewer', [
         this._controller = new GestureController(this._view);
     }
 
-    Object.assign(ImageViewer.prototype, {
+    extend(ImageViewer.prototype, {
         destroy: function () {
             this._controller.destroy();
             this._view.destroy();
@@ -25,7 +26,7 @@ ym.modules.define('shri2017.ImageViewer', [
                 throw new Error('Elem parameter is required');
             }
 
-            return Object.assign({
+            return extend({
                 size: {
                     width: 800,
                     height: 600
