@@ -3,7 +3,7 @@ ym.modules.define('shri2017.imageViewer.GestureController', [
     'util.extend'
 ], function (provide, EventManager, extend) {
 
-    var DBL_TAB_STEP = 0.2;
+    var DBL_TAP_STEP = 0.2;
 
     var Controller = function (view) {
         this._view = view;
@@ -32,7 +32,7 @@ ym.modules.define('shri2017.imageViewer.GestureController', [
 
             if (this._lastEventTypes.indexOf('start end start end') > -1) {
                 this._lastEventTypes = '';
-                this._processDbltab(event);
+                this._processDbltap(event);
                 return;
             }
 
@@ -62,11 +62,11 @@ ym.modules.define('shri2017.imageViewer.GestureController', [
             );
         },
 
-        _processDbltab: function (event) {
+        _processDbltap: function (event) {
             var state = this._view.getState();
             this._scale(
                 event.targetPoint,
-                state.scale + DBL_TAB_STEP
+                state.scale + DBL_TAP_STEP
             );
         },
 
