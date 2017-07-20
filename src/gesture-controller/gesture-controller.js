@@ -4,6 +4,7 @@ ym.modules.define('shri2017.imageViewer.GestureController', [
 ], function (provide, EventManager, extend) {
 
     var DBL_TAP_STEP = 0.2;
+    var ONE_TOUCH_SCALE_PER_PIXEL = 300;
 
     var Controller = function (view) {
         this._view = view;
@@ -11,7 +12,15 @@ ym.modules.define('shri2017.imageViewer.GestureController', [
             this._view.getElement(),
             this._eventHandler.bind(this)
         );
-        this._lastEventTypes = '';
+
+        this._moveableBehavior = {
+            // #!
+            oneTouchZoom: this._proccessOneTouchZoom,
+            multiTouch: this._processMultitouch,
+            drag: this._processDrag
+        };
+
+        this._taps = 0;
     };
 
     extend(Controller.prototype, {
@@ -20,31 +29,39 @@ ym.modules.define('shri2017.imageViewer.GestureController', [
         },
 
         _eventHandler: function (event) {
-            var state = this._view.getState();
 
-            // dblclick
-            if (!this._lastEventTypes) {
-                setTimeout(function () {
-                    this._lastEventTypes = '';
-                }.bind(this), 500);
-            }
-            this._lastEventTypes += ' ' + event.type;
+            this._calculateTaps(event);
 
-            if (this._lastEventTypes.indexOf('start end start end') > -1) {
-                this._lastEventTypes = '';
+            // DblTap
+            if (!this._activeBehavior && this._taps === 2) {
+                this._taps = 0;
                 this._processDbltap(event);
                 return;
             }
 
             if (event.type === 'move') {
-                if (event.distance > 1 && event.distance !== this._initEvent.distance) {
-                    this._processMultitouch(event);
-                } else {
-                    this._processDrag(event);
+                if (!this._activeBehavior) {
+                    if (event.pointerType === 'touch' &&
+                        this._taps === 1 &&
+                        this._checkMovement(this._initEvent, event) &&
+                        this._initEvent.type === 'start') {
+                        this._activeBehavior = 'oneTouchZoom';
+                    } else if (event.distance > 0) {
+                        this._activeBehavior = 'multiTouch';
+                    } else if (this._checkMovement(this._initEvent, event)) {
+                        this._activeBehavior = 'drag';
+                    }
+                }
+                if (this._activeBehavior) {
+                    this._moveableBehavior[this._activeBehavior].call(this, event);
                 }
             } else {
                 this._initState = this._view.getState();
                 this._initEvent = event;
+                if (this._activeBehavior) {
+                    this._taps = 0;
+                }
+                this._activeBehavior = null;
             }
         },
 
@@ -53,6 +70,13 @@ ym.modules.define('shri2017.imageViewer.GestureController', [
                 positionX: this._initState.positionX + (event.targetPoint.x - this._initEvent.targetPoint.x),
                 positionY: this._initState.positionY + (event.targetPoint.y - this._initEvent.targetPoint.y)
             });
+        },
+
+        _proccessOneTouchZoom: function (event) {
+            this._scale(
+                this._initEvent.targetPoint,
+                this._initState.scale + ((event.targetPoint.y - this._initEvent.targetPoint.y) / ONE_TOUCH_SCALE_PER_PIXEL)
+            );
         },
 
         _processMultitouch: function (event) {
@@ -70,8 +94,31 @@ ym.modules.define('shri2017.imageViewer.GestureController', [
             );
         },
 
+        _calculateTaps: function (event) {
+            if (event.type === 'end') {
+                // Нам нужны только лишь табы за последнюю треть секунды
+                // Не учитываем местоположение табов, так как время их жизни очень маленькое
+                if (!this._taps) {
+                    setTimeout(function () {
+                        this._taps = 0;
+                    }.bind(this), 300);
+                }
+                if (!this._checkMovement(this._initEvent, event)) {
+                    this._taps++;
+                } else {
+                    this._taps = 0;
+                }
+            }
+        },
+
+        _checkMovement: function (firstEvent, secondEvent) {
+            var oldPoint = firstEvent.targetPoint;
+            var newPoint = secondEvent.targetPoint;
+            return Math.abs(oldPoint.x - newPoint.x) > 3 || Math.abs(oldPoint.y - newPoint.y) > 3;
+        },
+
         _scale: function (targetPoint, newScale) {
-            newScale = Math.max(Math.min(newScale, 10), 0.02);
+            newScale = Math.max(newScale, 0.01);
             var imageSize = this._view.getImageSize();
             var state = this._view.getState();
             // Позиция прикосновения на изображении на текущем уровне масштаба
